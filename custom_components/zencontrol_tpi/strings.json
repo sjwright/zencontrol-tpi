@@ -1,0 +1,38 @@
+{
+  "title": "zencontrol",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to zencontrol controller",
+        "description": "Enter the details for your zencontrol application controller. Note that the controller must have a TPI Advanced license attached.",
+        "data": {
+          "host": "Host (IP address)",
+          "port": "Port",
+          "mac": "MAC address",
+          "label": "Controller name",
+          "unicast": "Use unicast events (not recommended - only use if broadcast packets are unsupported by your network topology)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure zencontrol controller",
+        "description": "Update connection settings for your zencontrol application controller.",
+        "data": {
+          "host": "Host (IP address)",
+          "port": "Port",
+          "mac": "MAC address",
+          "label": "Controller name",
+          "unicast": "Use unicast events (not recommended - only use if broadcast packets are unsupported by your network topology)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to reach the controller. Check the host/port and try again.",
+      "invalid_mac": "Invalid MAC address format. Use XX:XX:XX:XX:XX:XX.",
+      "invalid_label": "Controller name cannot be empty."
+    },
+    "abort": {
+      "already_configured": "This zencontrol application controller is already configured.",
+      "reconfigure_successful": "Reconfiguration successful."
+    }
+  }
+}

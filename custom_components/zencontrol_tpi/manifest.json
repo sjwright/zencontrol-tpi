@@ -1,0 +1,17 @@
+{
+  "domain": "zencontrol_tpi",
+  "name": "Zencontrol TPI",
+  "codeowners": ["@sjwright"],
+  "config_flow": true,
+  "documentation": "https://github.com/sjwright/zencontrol-tpi",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/sjwright/zencontrol-tpi/issues",
+  "loggers": ["zencontrol"],
+  "requirements": [],
+  "_requirements_release": [
+    "zencontrol-python@git+https://github.com/sjwright/zencontrol-python.git@main"
+  ],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

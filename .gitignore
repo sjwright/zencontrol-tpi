@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.DS_Store
+.cursor/
+
+# Home Assistant local runtime
+dev-config/.storage/
+dev-config/.cache/
+dev-config/.cloud/
+dev-config/deps/
+dev-config/tts/
+dev-config/blueprints/
+dev-config/home-assistant.log*
+dev-config/home-assistant_v2.db*
+dev-config/.HA_VERSION
+dev-config/.ha_run.lock
