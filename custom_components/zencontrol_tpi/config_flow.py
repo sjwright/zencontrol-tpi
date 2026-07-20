@@ -83,13 +83,10 @@ def _connection_schema(
 async def _test_connection(host: str, port: int, mac: str, label: str) -> bool:
     """Return True if the controller responds within 5 seconds.
 
-    Uses a throwaway controller name so the ZenController singleton used by a
-    running integration instance is never overwritten during config-flow setup.
+    Uses a dedicated ZenControl instance. Entity identity is scoped per
+    ZenControl/ZenProtocol, so this cannot overwrite a running integration's
+    entities. A unique controller name is still used for clarity in logs.
     """
-    # The ZenController singleton is keyed by name. Using a fixed name here
-    # would overwrite the protocol of any already-running controller with the
-    # same name, breaking the live integration. The timestamp suffix ensures
-    # the test controller is always a fresh singleton.
     test_name = f"cftest{int(time.monotonic_ns()) % 10 ** 9}"
     zen = zencontrol.ZenControl()
     try:
@@ -105,9 +102,9 @@ async def _test_connection(host: str, port: int, mac: str, label: str) -> bool:
         return False
     finally:
         try:
-            await zen.stop()
+            await zen.aclose()
         except Exception:
-            _LOGGER.debug("Failed to stop connection-test ZenControl", exc_info=True)
+            _LOGGER.debug("Failed to close connection-test ZenControl", exc_info=True)
 
 
 class ZencontrolTpiConfigFlow(ConfigFlow, domain=DOMAIN):

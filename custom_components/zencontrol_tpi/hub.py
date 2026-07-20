@@ -26,8 +26,6 @@ _LOGGER = logging.getLogger(__name__)
 _STARTUP_RETRY_INTERVAL = 10  # seconds between is_controller_ready polls
 _READY_QUERY_TIMEOUT = 10.0
 _READY_WAIT_MAX = 300.0  # give up waiting for controller boot after 5 minutes
-_RECONNECT_INITIAL_DELAY = 5.0
-_RECONNECT_MAX_DELAY = 60.0
 
 # Entry IDs that should force full bus discovery on the next setup (reload).
 _FORCE_FULL_DISCOVERY: set[str] = set()
@@ -64,7 +62,6 @@ class ZenHub:
         self._rate_limiter = RateLimiter(max_concurrent=5, delay_between_batches=0.1)
         self._available = False
         self._stopping = False
-        self._reconnect_task: asyncio.Task[None] | None = None
 
         self.zen: zencontrol.ZenControl | None = None
         self.controllers: list[zencontrol.ZenController] = []
@@ -350,19 +347,11 @@ class ZenHub:
             await cb()
 
     async def async_stop(self) -> None:
-        """Stop the event listener and clear callbacks."""
+        """Stop monitoring, close UDP clients, and clear callbacks."""
         self._stopping = True
-        if self._reconnect_task is not None:
-            self._reconnect_task.cancel()
-            try:
-                await self._reconnect_task
-            except asyncio.CancelledError:
-                pass
-            self._reconnect_task = None
-
         self._available = False
         if self.zen is not None:
-            await self.zen.stop()
+            await self.zen.aclose()
             self.zen.on_connect = None
             self.zen.on_disconnect = None
             self.zen.light_change = None
@@ -378,56 +367,19 @@ class ZenHub:
     # ------------------------------------------------------------------
 
     async def _on_connect(self) -> None:
+        """Library reconnect supervisor calls this on each successful session."""
         _LOGGER.info("zencontrol event listener connected")
         self._available = True
+        # Initial setup already refreshed before zen.start(); re-query only on reconnect.
+        if self._discovery_complete and not self._stopping:
+            await self._refresh_light_states()
         self._write_entity_states()
 
     async def _on_disconnect(self) -> None:
+        """Library notifies disconnect; reconnect is handled inside ZenControl."""
         _LOGGER.info("zencontrol event listener disconnected")
         self._available = False
         self._write_entity_states()
-        if not self._stopping:
-            self._schedule_reconnect()
-
-    def _schedule_reconnect(self) -> None:
-        """Start a background reconnect loop if one is not already running."""
-        if self._reconnect_task is not None and not self._reconnect_task.done():
-            return
-        self._reconnect_task = self.hass.async_create_task(
-            self._reconnect_loop(),
-            name="zencontrol_tpi_reconnect",
-        )
-
-    async def _reconnect_loop(self) -> None:
-        """Retry zen.start() with exponential backoff until the listener is back."""
-        delay = _RECONNECT_INITIAL_DELAY
-        while not self._stopping:
-            _LOGGER.info(
-                "Reconnecting zencontrol event listener in %.0fs…", delay
-            )
-            try:
-                await asyncio.sleep(delay)
-            except asyncio.CancelledError:
-                raise
-
-            if self._stopping:
-                return
-
-            try:
-                assert self.zen is not None
-                await self.zen.start()
-                # on_connect sets availability; refresh runtime state next.
-                await self._refresh_light_states()
-                self._write_entity_states()
-                _LOGGER.info("zencontrol event listener reconnected")
-                return
-            except asyncio.CancelledError:
-                raise
-            except Exception as err:
-                _LOGGER.warning(
-                    "zencontrol event listener reconnect failed: %s", err
-                )
-                delay = min(delay * 2, _RECONNECT_MAX_DELAY)
 
     def _write_entity_states(self) -> None:
         """Push current state (including availability) for all registered entities."""
