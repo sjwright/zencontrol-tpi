@@ -9,7 +9,7 @@
   "issue_tracker": "https://github.com/sjwright/zencontrol-tpi/issues",
   "loggers": ["zencontrol"],
   "requirements": [
-    "zencontrol-python@git+https://github.com/sjwright/zencontrol-python.git@main"
+    "zencontrol-python>=0.1.0"
   ],
   "single_config_entry": true,
   "version": "0.1.0"

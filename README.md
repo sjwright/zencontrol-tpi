@@ -20,13 +20,7 @@ Home Assistant custom integration for [zencontrol](https://zencontrol.com) appli
 
 Copy `custom_components/zencontrol_tpi` into your Home Assistant `custom_components` directory (or install via HACS once published), then add **Zencontrol TPI** from Settings → Devices & services.
 
-Install the Python dependency from the sibling library, for example:
-
-```bash
-pip install "zencontrol-python@git+https://github.com/sjwright/zencontrol-python.git@main"
-```
-
-For local development against an editable checkout:
+Home Assistant installs the Python dependency automatically from PyPI (`zencontrol-python>=0.1.0`). For local development against an editable checkout:
 
 ```bash
 pip install -e /path/to/zencontrol-python
@@ -38,11 +32,11 @@ pip install -e /path/to/zencontrol-python
 python -m venv .venv
 source .venv/bin/activate
 pip install homeassistant
-pip install -e ../zencontrol-python   # or the git URL above
+pip install -e ../zencontrol-python
 ./run-ha
 ```
 
-`./run-ha` starts Home Assistant with `dev-config/`. Use `./reset-ha` to wipe the local HA config state.
+`./run-ha` starts Home Assistant with `dev-config/` and skips pip-installing `zencontrol-python` so your editable checkout is used. Use `./reset-ha` to wipe the local HA config state.
 
 ## License
 
