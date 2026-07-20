@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.light import (
@@ -11,18 +10,17 @@ from homeassistant.components.light import (
     ATTR_RGB_COLOR,
     ATTR_RGBW_COLOR,
     ATTR_RGBWW_COLOR,
+    ColorMode,
     LightEntity,
 )
-from homeassistant.components.light.const import ColorMode
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from zencontrol import ZenColour, ZenColourType  # type: ignore[import-untyped]
 
 from .const import arc_to_brightness, brightness_to_arc
-from .coordinator import ZenHub, ZencontrolTpiConfigEntry
 from .entity import ZenControllerEntity, controller_device_info
-
-_LOGGER = logging.getLogger(__name__)
+from .hub import ZenHub, ZencontrolTpiConfigEntry
 
 PARALLEL_UPDATES = 0
 
@@ -178,32 +176,42 @@ class ZenLightEntity(ZenControllerEntity, LightEntity):
         arc = brightness_to_arc(brightness) if brightness is not None else None
         colour: ZenColour | None = None
 
-        if brightness == 0:
-            await self._light.off(fade=True)
-            return
+        try:
+            if brightness == 0:
+                await self._light.off(fade=True)
+                return
 
-        if kelvin is not None:
-            colour = ZenColour(type=ZenColourType.TC, kelvin=kelvin)
-        elif rgb is not None:
-            r, g, b = rgb
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=0, a=0, f=0)
-        elif rgbw is not None:
-            r, g, b, w = rgbw
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=0, f=0)
-        elif rgbww is not None:
-            r, g, b, w, a = rgbww
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=a, f=0)
+            if kelvin is not None:
+                colour = ZenColour(type=ZenColourType.TC, kelvin=kelvin)
+            elif rgb is not None:
+                r, g, b = rgb
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=0, a=0, f=0)
+            elif rgbw is not None:
+                r, g, b, w = rgbw
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=0, f=0)
+            elif rgbww is not None:
+                r, g, b, w, a = rgbww
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=a, f=0)
 
-        if arc is not None or colour is not None:
-            # Preserve current level when only colour is changing
-            if arc is None:
-                arc = self._light.level if self._light.level is not None else 254
-            await self._light.set(level=arc, colour=colour, fade=True)
-        else:
-            await self._light.on(fade=True)
+            if arc is not None or colour is not None:
+                # Preserve current level when only colour is changing
+                if arc is None:
+                    arc = self._light.level if self._light.level is not None else 254
+                await self._light.set(level=arc, colour=colour, fade=True)
+            else:
+                await self._light.on(fade=True)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn on light: {err}") from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._light.off(fade=True)
+        try:
+            await self._light.off(fade=True)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn off light: {err}") from err
 
 
 # ---------------------------------------------------------------------------
@@ -296,28 +304,38 @@ class ZenGroupEntity(ZenControllerEntity, LightEntity):
         arc = brightness_to_arc(brightness) if brightness is not None else None
         colour: ZenColour | None = None
 
-        if brightness == 0:
-            await self._group.off(fade=True)
-            return
+        try:
+            if brightness == 0:
+                await self._group.off(fade=True)
+                return
 
-        if kelvin is not None:
-            colour = ZenColour(type=ZenColourType.TC, kelvin=kelvin)
-        elif rgb is not None:
-            r, g, b = rgb
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=0, a=0, f=0)
-        elif rgbw is not None:
-            r, g, b, w = rgbw
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=0, f=0)
-        elif rgbww is not None:
-            r, g, b, w, a = rgbww
-            colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=a, f=0)
+            if kelvin is not None:
+                colour = ZenColour(type=ZenColourType.TC, kelvin=kelvin)
+            elif rgb is not None:
+                r, g, b = rgb
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=0, a=0, f=0)
+            elif rgbw is not None:
+                r, g, b, w = rgbw
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=0, f=0)
+            elif rgbww is not None:
+                r, g, b, w, a = rgbww
+                colour = ZenColour(type=ZenColourType.RGBWAF, r=r, g=g, b=b, w=w, a=a, f=0)
 
-        if arc is not None or colour is not None:
-            if arc is None:
-                arc = self._group.level if self._group.level is not None else 254
-            await self._group.set(level=arc, colour=colour, fade=True)
-        else:
-            await self._group.on(fade=True)
+            if arc is not None or colour is not None:
+                if arc is None:
+                    arc = self._group.level if self._group.level is not None else 254
+                await self._group.set(level=arc, colour=colour, fade=True)
+            else:
+                await self._group.on(fade=True)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn on group: {err}") from err
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._group.off(fade=True)
+        try:
+            await self._group.off(fade=True)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn off group: {err}") from err

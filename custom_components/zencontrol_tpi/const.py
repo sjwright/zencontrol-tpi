@@ -5,11 +5,20 @@ from __future__ import annotations
 import math
 from typing import Final
 
+from homeassistant.const import Platform
+
 DOMAIN: Final = "zencontrol_tpi"
 
 DEFAULT_PORT: Final = 5108
 
-PLATFORMS: Final = ["light", "binary_sensor", "switch", "sensor", "select", "event"]
+PLATFORMS: Final = [
+    Platform.LIGHT,
+    Platform.BINARY_SENSOR,
+    Platform.SWITCH,
+    Platform.SENSOR,
+    Platform.SELECT,
+    Platform.EVENT,
+]
 
 # Config entry keys
 CONF_CONTROLLERS: Final = "controllers"
@@ -25,9 +34,6 @@ SCENE_NONE: Final = "None"
 _LOG_A: Final = -59.53
 _LOG_B: Final = 56.58
 
-# Tracks config-entry reloads that should force full bus discovery
-FORCE_FULL_DISCOVERY: dict[str, bool] = {}
-
 
 def arc_to_brightness(arc: int) -> int:
     """Convert DALI arc level (0-254) to HA brightness (0-255)."""
@@ -41,17 +47,3 @@ def brightness_to_arc(brightness: int) -> int:
     if brightness <= 0:
         return 0
     return min(254, max(0, round(_LOG_A + _LOG_B * math.log(brightness))))
-
-
-def kelvin_to_mireds(kelvin: int) -> int:
-    """Convert Kelvin to mireds."""
-    if kelvin <= 0:
-        return 0
-    return round(1_000_000 / kelvin)
-
-
-def mireds_to_kelvin(mireds: int) -> int:
-    """Convert mireds to Kelvin."""
-    if mireds <= 0:
-        return 0
-    return round(1_000_000 / mireds)

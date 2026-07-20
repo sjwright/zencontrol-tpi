@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import logging
-
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import FORCE_FULL_DISCOVERY, PLATFORMS
-from .coordinator import ZenHub, ZencontrolTpiConfigEntry
+from .const import PLATFORMS
+from .hub import (
+    ZenHub,
+    ZencontrolTpiConfigEntry,
+    mark_force_full_discovery,
+    pop_force_full_discovery,
+)
 from .manifest_store import DiscoveryManifestStore
-
-_LOGGER = logging.getLogger(__name__)
 
 __all__ = ["ZencontrolTpiConfigEntry"]
 
@@ -20,7 +21,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ZencontrolTpiConfigEntry
 ) -> bool:
     """Set up zencontrol-tpi from a config entry."""
-    force_full_discovery = FORCE_FULL_DISCOVERY.pop(entry.entry_id, False)
+    force_full_discovery = pop_force_full_discovery(entry.entry_id)
 
     hub = ZenHub(hass, entry, force_full_discovery=force_full_discovery)
     entry.runtime_data = hub
@@ -47,7 +48,7 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a zencontrol-tpi config entry."""
     if not hass.is_stopping:
-        FORCE_FULL_DISCOVERY[entry.entry_id] = True
+        mark_force_full_discovery(entry.entry_id)
 
     hub = entry.runtime_data
     await hub.async_stop()

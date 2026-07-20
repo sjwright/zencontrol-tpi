@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import SCENE_NONE
-from .coordinator import ZenHub, ZencontrolTpiConfigEntry
 from .entity import ZenControllerEntity, controller_device_info
-
-_LOGGER = logging.getLogger(__name__)
+from .hub import ZenHub, ZencontrolTpiConfigEntry
 
 PARALLEL_UPDATES = 0
 
@@ -52,6 +51,9 @@ async def async_setup_entry(
 class ZenProfileSelectEntity(ZenControllerEntity, SelectEntity):
     """Select entity to switch between controller profiles."""
 
+    _attr_translation_key = "profile"
+    _attr_entity_category = EntityCategory.CONFIG
+
     def __init__(self, hub: ZenHub, zen_ctrl: Any, profiles: list[Any]) -> None:
         super().__init__(hub)
         self._ctrl = zen_ctrl
@@ -60,7 +62,6 @@ class ZenProfileSelectEntity(ZenControllerEntity, SelectEntity):
         self._attr_unique_id = f"{zen_ctrl.name}_profile"
         self._suggested_object_id = "profile"
         self._attr_device_info = controller_device_info(zen_ctrl)
-        self._attr_name = "Profile"
         self._attr_options = list(self._profiles.keys())
         self._attr_current_option = self._current_option_from_ctrl()
 
@@ -78,12 +79,23 @@ class ZenProfileSelectEntity(ZenControllerEntity, SelectEntity):
         self.async_write_ha_state()
 
     async def async_select_option(self, option: str) -> None:
-        await self._ctrl.switch_to_profile(option)
+        if option not in self._profiles:
+            raise ServiceValidationError(f"Unknown profile: {option}")
+        try:
+            await self._ctrl.switch_to_profile(option)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to switch profile: {err}") from err
         self._attr_current_option = option
+        self.async_write_ha_state()
 
 
 class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
     """Select entity to recall a named scene on a group."""
+
+    _attr_translation_key = "group_scene"
+    _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, hub: ZenHub, zen_group: Any) -> None:
         super().__init__(hub)
@@ -96,7 +108,7 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
         scene_labels = zen_group.get_scene_labels(exclude_none=True)
         self._attr_options = [SCENE_NONE, *scene_labels]
         group_label = zen_group.label or f"Group {zen_group.address.number}"
-        self._attr_name = f"{group_label} Scene"
+        self._attr_translation_placeholders = {"group": group_label}
         self._attr_current_option = self._current_option_from_group()
 
         hub.register_scene_entity(zen_group, self)
@@ -120,5 +132,13 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         if option == SCENE_NONE:
             return
-        await self._group.set_scene(option, fade=True)
+        if option not in self._attr_options:
+            raise ServiceValidationError(f"Unknown scene: {option}")
+        try:
+            await self._group.set_scene(option, fade=True)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to recall scene: {err}") from err
         self._attr_current_option = option
+        self.async_write_ha_state()

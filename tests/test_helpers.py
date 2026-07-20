@@ -10,8 +10,6 @@ from custom_components.zencontrol_tpi.const import (
     SCENE_NONE,
     arc_to_brightness,
     brightness_to_arc,
-    kelvin_to_mireds,
-    mireds_to_kelvin,
 )
 from custom_components.zencontrol_tpi.manifest_store import build_manifest
 from custom_components.zencontrol_tpi.rate_limiter import RateLimiter
@@ -24,13 +22,6 @@ def test_arc_brightness_roundtrip() -> None:
     assert arc > 0
     brightness = arc_to_brightness(arc)
     assert 100 <= brightness <= 160
-
-
-def test_kelvin_mireds_roundtrip() -> None:
-    """Kelvin and mireds convert consistently within rounding."""
-    mireds = kelvin_to_mireds(3000)
-    assert mireds == 333
-    assert abs(mireds_to_kelvin(mireds) - 3000) <= 5
 
 
 def test_classify_sysvar() -> None:

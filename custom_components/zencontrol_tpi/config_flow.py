@@ -10,8 +10,7 @@ from typing import Any
 
 import voluptuous as vol
 import zencontrol  # type: ignore[import-untyped]
-from homeassistant import config_entries
-from homeassistant.config_entries import ConfigFlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT
 
 from .const import (
@@ -111,7 +110,7 @@ async def _test_connection(host: str, port: int, mac: str, label: str) -> bool:
             _LOGGER.debug("Failed to stop connection-test ZenControl", exc_info=True)
 
 
-class ZencontrolTpiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ZencontrolTpiConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for zencontrol-tpi."""
 
     VERSION = 1

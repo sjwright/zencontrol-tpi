@@ -1,4 +1,4 @@
-"""ZenHub coordinator: manages the ZenControl lifecycle and entity dispatch."""
+"""ZenHub: manages the ZenControl lifecycle and entity dispatch."""
 
 from __future__ import annotations
 
@@ -29,6 +29,23 @@ _READY_WAIT_MAX = 300.0  # give up waiting for controller boot after 5 minutes
 _RECONNECT_INITIAL_DELAY = 5.0
 _RECONNECT_MAX_DELAY = 60.0
 
+# Entry IDs that should force full bus discovery on the next setup (reload).
+_FORCE_FULL_DISCOVERY: set[str] = set()
+
+
+def pop_force_full_discovery(entry_id: str) -> bool:
+    """Return and clear whether this entry should force full discovery."""
+    try:
+        _FORCE_FULL_DISCOVERY.remove(entry_id)
+    except KeyError:
+        return False
+    return True
+
+
+def mark_force_full_discovery(entry_id: str) -> None:
+    """Request full bus discovery on the next setup of this entry."""
+    _FORCE_FULL_DISCOVERY.add(entry_id)
+
 
 class ZenHub:
     """Manages the zencontrol-python client and dispatches events to HA entities."""
@@ -36,7 +53,7 @@ class ZenHub:
     def __init__(
         self,
         hass: HomeAssistant,
-        entry: ConfigEntry,
+        entry: ZencontrolTpiConfigEntry,
         *,
         force_full_discovery: bool = False,
     ) -> None:

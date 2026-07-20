@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import ZenHub, ZencontrolTpiConfigEntry
 from .entity import ZenControllerEntity, controller_device_info
-
-_LOGGER = logging.getLogger(__name__)
+from .hub import ZenHub, ZencontrolTpiConfigEntry
 
 PARALLEL_UPDATES = 0
 
@@ -57,9 +55,21 @@ class ZenSystemVariableSwitchEntity(ZenControllerEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
-        await self._sv.set_value(1)
+        try:
+            await self._sv.set_value(1)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn on switch: {err}") from err
         self._attr_is_on = True
+        self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await self._sv.set_value(0)
+        try:
+            await self._sv.set_value(0)
+        except HomeAssistantError:
+            raise
+        except Exception as err:
+            raise HomeAssistantError(f"Failed to turn off switch: {err}") from err
         self._attr_is_on = False
+        self.async_write_ha_state()

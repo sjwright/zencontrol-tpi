@@ -34,5 +34,15 @@
       "already_configured": "This zencontrol application controller is already configured.",
       "reconfigure_successful": "Reconfiguration successful."
     }
+  },
+  "entity": {
+    "select": {
+      "profile": {
+        "name": "Profile"
+      },
+      "group_scene": {
+        "name": "{group} scene"
+      }
+    }
   }
 }

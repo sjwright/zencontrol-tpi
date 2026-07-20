@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from homeassistant.components.event import EventDeviceClass, EventEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import ZenHub, ZencontrolTpiConfigEntry
 from .entity import ZenControllerEntity, controller_device_info
-
-_LOGGER = logging.getLogger(__name__)
+from .hub import ZenHub, ZencontrolTpiConfigEntry
 
 PARALLEL_UPDATES = 0
 
@@ -60,4 +57,5 @@ class ZenButtonEntity(ZenControllerEntity, EventEntity):
 
     def trigger_event(self, event_type: str) -> None:
         """Called by ZenHub when a button press event is received."""
-        self._trigger_event(event_type, {})
+        self._trigger_event(event_type)
+        self.async_write_ha_state()
