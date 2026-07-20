@@ -380,12 +380,12 @@ class ZenHub:
     async def _on_connect(self) -> None:
         _LOGGER.info("zencontrol event listener connected")
         self._available = True
-        self._set_entities_available(True)
+        self._write_entity_states()
 
     async def _on_disconnect(self) -> None:
         _LOGGER.info("zencontrol event listener disconnected")
         self._available = False
-        self._set_entities_available(False)
+        self._write_entity_states()
         if not self._stopping:
             self._schedule_reconnect()
 
@@ -418,7 +418,7 @@ class ZenHub:
                 await self.zen.start()
                 # on_connect sets availability; refresh runtime state next.
                 await self._refresh_light_states()
-                self._set_entities_available(True)
+                self._write_entity_states()
                 _LOGGER.info("zencontrol event listener reconnected")
                 return
             except asyncio.CancelledError:
@@ -429,8 +429,8 @@ class ZenHub:
                 )
                 delay = min(delay * 2, _RECONNECT_MAX_DELAY)
 
-    def _set_entities_available(self, available: bool) -> None:
-        """Propagate hub availability change to all registered entities."""
+    def _write_entity_states(self) -> None:
+        """Push current state (including availability) for all registered entities."""
         for entity in (
             *self._light_entities.values(),
             *self._group_entities.values(),
@@ -441,7 +441,6 @@ class ZenHub:
             *self._profile_entities.values(),
             *self._scene_entities.values(),
         ):
-            entity._attr_available = available
             # Only write state for entities that have been added to HA.
             # During a failed setup, entities may be constructed but never
             # registered, so entity_id is not yet set.

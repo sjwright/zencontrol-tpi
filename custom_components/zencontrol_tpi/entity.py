@@ -30,7 +30,11 @@ class ZenControllerEntity(Entity):
 
     def __init__(self, hub: Any) -> None:
         self._hub = hub
-        self._attr_available = hub.available
+
+    @property
+    def available(self) -> bool:
+        """Return True when the hub is connected."""
+        return self._hub.available
 
     @property
     def suggested_object_id(self) -> str | None:
