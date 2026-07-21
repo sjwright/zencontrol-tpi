@@ -133,15 +133,17 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
         self.async_write_ha_state()
 
     async def async_select_option(self, option: str) -> None:
-        if option == SCENE_NONE:
-            return
         if option not in self._attr_options:
             raise ServiceValidationError(f"Unknown scene: {option}")
         try:
-            await self._group.set_scene(option, fade=True)
+            if option == SCENE_NONE:
+                await self._group.off(fade=True)
+            else:
+                await self._group.set_scene(option, fade=True)
         except HomeAssistantError:
             raise
         except Exception as err:
-            raise HomeAssistantError(f"Failed to recall scene: {err}") from err
+            action = "turn off group" if option == SCENE_NONE else "recall scene"
+            raise HomeAssistantError(f"Failed to {action}: {err}") from err
         self._attr_current_option = option
         self.async_write_ha_state()
