@@ -95,8 +95,8 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
     """Select entity to recall a named scene on a group."""
 
     _attr_translation_key = "group_scene"
-    _attr_entity_category = EntityCategory.CONFIG
-
+    # Entity category is no category (controls).
+    
     def __init__(self, hub: ZenHub, zen_group: Any) -> None:
         super().__init__(hub)
         self._group = zen_group
