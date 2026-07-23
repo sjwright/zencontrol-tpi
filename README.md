@@ -1,16 +1,31 @@
 # Zencontrol TPI
 
-Home Assistant custom integration for [zencontrol](https://zencontrol.com) application controllers over TPI Advanced.
+A comprehensive Home Assistant custom integration for [zencontrol](https://zencontrol.com) application controllers over TPI Advanced.
 
-## Currently supports
+## Features
 
-- **Multiple controllers** in one integration (add during setup or later via Configure)
-- **Sub-devices** by label prefix (Configure → controller → sub-device) for assigning rooms/areas
-- **Profiles**
-- **Lights**
-- **Groups**, including scene recall for groups
-- **Button events**
-- **System variables**, where the SV name is suffixed with `switch` or `sensor`
+* **Easy setup** — find controllers on your subnet automatically at the press of a DALI button, or enter a host manually
+* **Auto-discovery** — lights, groups, buttons, motion sensors, profiles, and labelled system variables appear automatically after setup
+* **Rooms and areas** — group entities into sub-devices by label prefix so rooms map cleanly to Home Assistant areas
+* **Live updates** — light levels, colour, scenes, profiles, motion, and buttons update in Home Assistant as they change on the controller (no polling)
+* **Full colour** — all fixtures fully controllable for dimming, temperature and colour where supported, with correct conversion from linear (DALI) to perceptual (HA)
+* **Groups** — group control, plus group scene recall via a select entity
+* **Scenes** — complete scene recall including colour changes
+* **Button events** — short and long press events for controlling automations
+* **Motion sensors** — occupancy detections as binary sensors for lighting and presence automations
+* **Profiles** — view and change the active controller profile from Home Assistant
+* **System variables** — expose SVs as binary switches or numeric sensors by suffixing SV names with `switch` or `sensor`
+* **Translations** — UI strings in English, German, French, Danish, Swedish, Polish, Hindi, and Simplified Chinese
+
+## Architecture
+
+This integration is built on top of [`zencontrol-python`](https://github.com/sjwright/zencontrol-python), which is a complete implementation of the TPI Advanced protocol, transport, command API, and entity model. By using this library, the integration has:
+
+* **Reliable networking** — a fully resolved UDP stack with retries and backoff to absorb brief network glitches
+* **Listener-driven state** — a battle-tested event listener to keep state synchronisation locked in
+* **Multicast or unicast** — multicast is preferred when available; we support switching to unicast if multicast is blocked
+* **Richer discovery** — multicast find-on-LAN, interview of lights/groups/buttons/sensors/SVs, and many other resilience features are fully implemented
+* **Test-driven reliability** — the protocol stack has been exercised against a hardware simulator to ensure that edge cases and time-sensitive bugs are handled correctly
 
 ## Requirements
 
@@ -19,9 +34,9 @@ Home Assistant custom integration for [zencontrol](https://zencontrol.com) appli
 - Network reachability to the controller (host/port); MAC address is used for identification
 - [`zencontrol-python`](https://github.com/sjwright/zencontrol-python)
 
-## Install
+## How to install
 
-### HACS (custom repository)
+### Install via HACS (custom repository)
 
 1. HACS → Integrations → ⋮ → Custom repositories
 2. Repository: `sjwright/zencontrol-homeassistant`, Category: Integration
@@ -30,7 +45,7 @@ Home Assistant custom integration for [zencontrol](https://zencontrol.com) appli
 
 Home Assistant installs `zencontrol-python` from PyPI automatically.
 
-### Manual
+### Install manually
 
 Copy `custom_components/zencontrol_tpi` into your Home Assistant `custom_components` directory, restart, then add the integration as above.
 
@@ -42,7 +57,7 @@ For local development against an editable library checkout:
 pip install -e /path/to/zencontrol-python
 ```
 
-## Development
+## Install for development
 
 ```bash
 python -m venv .venv
