@@ -21,10 +21,10 @@ A comprehensive Home Assistant custom integration for [zencontrol](https://zenco
 
 This integration is built on top of [`zencontrol-python`](https://github.com/sjwright/zencontrol-python), which is a complete implementation of the TPI Advanced protocol, transport, command API, and entity model. By using this library, the integration has:
 
-* **Reliable networking** — a fully resolved UDP stack with retries and backoff to absorb brief network glitches
-* **Listener-driven state** — a battle-tested event listener to keep state synchronisation locked in
-* **Multicast or unicast** — multicast is preferred when available; we support switching to unicast if multicast is blocked
-* **Richer discovery** — multicast find-on-LAN, interview of lights/groups/buttons/sensors/SVs, and many other resilience features are fully implemented
+* **Reliable networking** — a fully resolved UDP stack with retries and backoff to absorb network challenges
+* **Listener-driven state** — a battle-tested event listener wired to locally cached scene settings to keep synchronisation fast and reliable
+* **Multicast or unicast** — multicast mode is superior when available; we support fallback to unicast if multicast is blocked
+* **Richer discovery** — multicast find-on-LAN, interview of lights/groups/buttons/sensors/SVs, and many other features are fully implemented
 * **Test-driven reliability** — the protocol stack has been exercised against a hardware simulator to ensure that edge cases and time-sensitive bugs are handled correctly
 
 ## Requirements

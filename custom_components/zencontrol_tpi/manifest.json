@@ -12,5 +12,5 @@
     "zencontrol-python>=0.1.4",
     "getmac>=0.9.4"
   ],
-  "version": "0.3.0"
+  "version": "0.3.1"
 }

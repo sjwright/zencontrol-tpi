@@ -51,6 +51,9 @@ type DiscoveryCallback = Callable[[], Coroutine[Any, Any, None]]
 _STARTUP_RETRY_INTERVAL = 10  # seconds between is_controller_ready polls
 _READY_QUERY_TIMEOUT = 10.0
 _READY_WAIT_MAX = 300.0  # give up waiting for controller boot after 5 minutes
+# Platform async_add_entities schedules work via ConfigEntry.async_create_task.
+# Bound how long startup will wait for those tasks (not all of hass).
+_ENTITY_ADD_TIMEOUT = 60.0
 
 # Entry IDs that should force full bus discovery on the next setup (reload).
 _FORCE_FULL_DISCOVERY: set[str] = set()
@@ -105,6 +108,7 @@ class ZenHub:
 
         self._discovery_callbacks: list[DiscoveryCallback] = []
         self._discovery_complete = False
+        self._discovery_notified = False
 
         self._light_entities: dict[Any, Any] = {}
         self._group_entities: dict[Any, Any] = {}
@@ -379,8 +383,13 @@ class ZenHub:
 
     def register_discovery_callback(self, callback: DiscoveryCallback) -> None:
         """Register a coroutine to call when discovery completes."""
-        if self._discovery_complete:
-            self.hass.async_create_task(callback())
+        if self._discovery_notified:
+            # Discovery already finished (unusual race); run under this entry.
+            self.entry.async_create_task(
+                self.hass,
+                self._async_run_discovery_callback(callback),
+                f"zencontrol late discovery {self.entry.entry_id}",
+            )
         else:
             self._discovery_callbacks.append(callback)
 
@@ -419,21 +428,81 @@ class ZenHub:
             await self.runtime.async_ensure_started()
             self._controller_online = True
             await self._notify_discovery_complete()
-            await self.hass.async_block_till_done()
             self.sync_device_assignments()
         except ConfigEntryNotReady:
             self._controller_online = False
-            await self._notify_discovery_complete()
+            await self._async_notify_discovery_best_effort()
             raise
         except asyncio.CancelledError:
             _LOGGER.debug("ZenHub startup task cancelled")
             raise
         except Exception as err:
             self._controller_online = False
-            await self._notify_discovery_complete()
+            await self._async_notify_discovery_best_effort()
             raise ConfigEntryNotReady(
                 f"zencontrol setup failed: {err}"
             ) from err
+
+    def _entry_tracked_tasks(self) -> set[asyncio.Task[Any]]:
+        """Return tasks created via ``ConfigEntry.async_create_task``.
+
+        EntityPlatform uses that API when integrations call the sync
+        ``async_add_entities`` callback. There is no public accessor.
+        """
+        return self.entry._tasks  # noqa: SLF001
+
+    async def _async_await_new_entry_tasks(
+        self,
+        before: set[asyncio.Task[Any]],
+        *,
+        what: str,
+    ) -> None:
+        """Await entry tasks scheduled after ``before`` was snapshotted.
+
+        Unlike ``hass.async_block_till_done()``, this never waits on unrelated
+        hass tasks (which deadlocks when CREATE_ENTRY is awaiting setup).
+        """
+        pending = [
+            task
+            for task in self._entry_tracked_tasks()
+            if task not in before and not task.done()
+        ]
+        if not pending:
+            return
+
+        _LOGGER.debug(
+            "Waiting for %d %s task(s) for entry %s",
+            len(pending),
+            what,
+            self.entry.entry_id,
+        )
+        done, not_done = await asyncio.wait(
+            pending, timeout=_ENTITY_ADD_TIMEOUT
+        )
+        if not_done:
+            for task in not_done:
+                task.cancel()
+            raise ConfigEntryNotReady(
+                f"Timed out after {_ENTITY_ADD_TIMEOUT:.0f}s waiting for {what}"
+            )
+        for task in done:
+            if task.cancelled():
+                raise asyncio.CancelledError
+            exc = task.exception()
+            if exc is not None:
+                raise ConfigEntryNotReady(f"{what} failed: {exc}") from exc
+
+    async def _async_run_discovery_callback(
+        self, callback: DiscoveryCallback
+    ) -> None:
+        """Run one platform callback and await entity-adds it schedules."""
+        before = set(self._entry_tracked_tasks())
+        await callback()
+        await self._async_await_new_entry_tasks(
+            before, what="platform entity add"
+        )
+        if not self._stopping:
+            self.sync_device_assignments()
 
     async def _wait_for_controller(self) -> None:
         """Poll until this controller is ready, then interview."""
@@ -611,11 +680,40 @@ class ZenHub:
                 if isinstance(result, Exception):
                     _LOGGER.warning("State refresh failed: %s", result)
 
+    async def _async_notify_discovery_best_effort(self) -> None:
+        """Notify platforms after a failed start without masking the error."""
+        try:
+            await self._notify_discovery_complete()
+        except Exception:
+            _LOGGER.debug(
+                "Discovery notify after setup failure failed",
+                exc_info=True,
+            )
+
     async def _notify_discovery_complete(self) -> None:
-        """Signal platforms that discovery finished (success or failure)."""
+        """Run platform discovery callbacks and await entity-adds they schedule.
+
+        Platform ``async_add_entities`` is synchronous and only schedules work
+        via ``ConfigEntry.async_create_task``. We await those new entry tasks
+        only — never ``hass.async_block_till_done()``, which deadlocks when
+        CREATE_ENTRY is awaiting setup.
+        """
+        if self._discovery_notified:
+            return
+        self._discovery_notified = True
         self._discovery_complete = True
-        for cb in self._discovery_callbacks:
-            await cb()
+
+        callbacks = self._discovery_callbacks
+        self._discovery_callbacks = []
+        if not callbacks:
+            return
+
+        before = set(self._entry_tracked_tasks())
+        for callback in callbacks:
+            await callback()
+        await self._async_await_new_entry_tasks(
+            before, what="platform entity add"
+        )
 
     async def async_stop(self) -> None:
         """Detach this entry from the shared runtime."""

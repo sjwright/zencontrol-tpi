@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -54,6 +55,11 @@ async def async_setup_entry(
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         platforms_forwarded = True
         await hub.async_start()
+    except asyncio.CancelledError:
+        await hub.async_stop()
+        if platforms_forwarded:
+            await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        raise
     except Exception as err:
         await hub.async_stop()
         if platforms_forwarded:
