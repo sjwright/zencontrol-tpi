@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import SCENE_NONE
+from .const import SCENE_NONE, SCENE_OFF
 from .entity import ZenControllerEntity
 from .hub import ZencontrolTpiConfigEntry, ZenHub
 from .sub_devices import group_assignment_key
@@ -96,8 +96,7 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
     """Select entity to recall a named scene on a group."""
 
     _attr_translation_key = "group_scene"
-    # Entity category is no category (controls).
-    
+
     def __init__(self, hub: ZenHub, zen_group: Any) -> None:
         ctrl = zen_group.address.controller
         super().__init__(hub, ctrl)
@@ -109,21 +108,19 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
             ctrl, assignment_key=group_assignment_key(zen_group)
         )
         scene_labels = zen_group.get_scene_labels(exclude_none=True)
-        self._attr_options = [SCENE_NONE, *scene_labels]
+        self._attr_options = [SCENE_OFF, SCENE_NONE, *scene_labels]
         group_label = zen_group.label or f"Group {zen_group.address.number}"
         self._attr_translation_placeholders = {"group": group_label}
         self._attr_current_option = self._current_option_from_group()
 
-        hub.register_scene_entity(zen_group, self)
+        hub.register_scene_select_entity(zen_group, self)
 
-    def _current_option_from_group(self) -> str | None:
-        match (self._group.level, self._group.colour, self._group.scene):
-            case (None, None, None):
-                return SCENE_NONE
-            case (_, _, None):
-                return None
-            case (_, _, scene):
-                return self._group.get_scene_label_from_number(scene) or SCENE_NONE
+    def _current_option_from_group(self) -> str:
+        if self._group.scene is not None:
+            label = self._group.get_scene_label_from_number(self._group.scene)
+            if label is not None:
+                return label
+        return SCENE_NONE
 
     def update_current_option(self) -> None:
         """Called by ZenHub when the group scene/level changes."""
@@ -133,15 +130,20 @@ class ZenGroupSceneSelectEntity(ZenControllerEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         if option not in self._attr_options:
             raise ServiceValidationError(f"Unknown scene: {option}")
+        if option == SCENE_NONE:
+            # Sentinel for unknown scene — no controller command.
+            self._attr_current_option = self._current_option_from_group()
+            self.async_write_ha_state()
+            return
         try:
-            if option == SCENE_NONE:
+            if option == SCENE_OFF:
                 await self._group.off(fade=True)
             else:
                 await self._group.set_scene(option, fade=True)
         except HomeAssistantError:
             raise
         except Exception as err:
-            action = "turn off group" if option == SCENE_NONE else "recall scene"
+            action = "turn off group" if option == SCENE_OFF else "recall scene"
             raise HomeAssistantError(f"Failed to {action}: {err}") from err
         self._attr_current_option = option
         self.async_write_ha_state()

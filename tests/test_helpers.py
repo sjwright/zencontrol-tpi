@@ -25,6 +25,7 @@ from custom_components.zencontrol_tpi.const import (
     CONF_MAC,
     CONF_NAME,
     SCENE_NONE,
+    SCENE_OFF,
     arc_to_brightness,
     brightness_to_arc,
 )
@@ -97,8 +98,9 @@ async def test_rate_limiter_execute_batch() -> None:
     assert calls == [1, 2, 3]
 
 
-def test_scene_none_constant() -> None:
-    """Scene none label matches mqtt_bridge."""
+def test_scene_select_constants() -> None:
+    """Group scene select Off / None option labels."""
+    assert SCENE_OFF == "Off"
     assert SCENE_NONE == "None"
 
 

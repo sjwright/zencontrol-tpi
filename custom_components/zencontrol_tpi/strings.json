@@ -166,7 +166,12 @@
         "name": "Profile"
       },
       "group_scene": {
-        "name": "{group} scene"
+        "name": "{group} Group Scene"
+      }
+    },
+    "scene": {
+      "group_scene": {
+        "name": "{group} Group {scene}"
       }
     },
     "sensor": {

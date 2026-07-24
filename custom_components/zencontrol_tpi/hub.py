@@ -125,7 +125,8 @@ class ZenHub:
         self._sv_sensor_entities: dict[Any, Any] = {}
         self._sv_switch_entities: dict[Any, Any] = {}
         self._profile_entities: dict[Any, Any] = {}
-        self._scene_entities: dict[Any, Any] = {}
+        self._scene_select_entities: dict[Any, Any] = {}
+        self._scene_entities: dict[tuple[Any, int], Any] = {}
         self._status_entity: Any | None = None
 
         self._sub_devices_by_controller: dict[str, list[SubDeviceDef]] = {}
@@ -361,7 +362,11 @@ class ZenHub:
             targets.append(
                 (entity, zen_group.address.controller, group_assignment_key(zen_group))
             )
-        for zen_group, entity in self._scene_entities.items():
+        for zen_group, entity in self._scene_select_entities.items():
+            targets.append(
+                (entity, zen_group.address.controller, group_assignment_key(zen_group))
+            )
+        for (zen_group, _), entity in self._scene_entities.items():
             targets.append(
                 (entity, zen_group.address.controller, group_assignment_key(zen_group))
             )
@@ -431,8 +436,13 @@ class ZenHub:
     def register_profile_entity(self, zen_controller: Any, entity: Any) -> None:
         self._profile_entities[zen_controller.name] = entity
 
-    def register_scene_entity(self, zen_group: Any, entity: Any) -> None:
-        self._scene_entities[zen_group] = entity
+    def register_scene_select_entity(self, zen_group: Any, entity: Any) -> None:
+        self._scene_select_entities[zen_group] = entity
+
+    def register_scene_entity(
+        self, zen_group: Any, scene_number: int, entity: Any
+    ) -> None:
+        self._scene_entities[(zen_group, scene_number)] = entity
 
     def register_discovery_callback(self, callback: DiscoveryCallback) -> None:
         """Register a coroutine to call when discovery completes."""
@@ -876,6 +886,7 @@ class ZenHub:
             *self._sv_sensor_entities.values(),
             *self._sv_switch_entities.values(),
             *self._profile_entities.values(),
+            *self._scene_select_entities.values(),
             *self._scene_entities.values(),
         ):
             if entity.entity_id:
@@ -888,8 +899,8 @@ class ZenHub:
     def handle_group_change(self, group: Any) -> None:
         if (group_entity := self._group_entities.get(group)) is not None:
             group_entity.update_state()
-        if (scene_entity := self._scene_entities.get(group)) is not None:
-            scene_entity.update_current_option()
+        if (scene_select := self._scene_select_entities.get(group)) is not None:
+            scene_select.update_current_option()
 
     def handle_button_press(self, button: Any) -> None:
         if (entity := self._button_entities.get(button)) is not None:

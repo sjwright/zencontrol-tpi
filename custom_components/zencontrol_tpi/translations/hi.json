@@ -166,7 +166,22 @@
         "name": "प्रोफ़ाइल"
       },
       "group_scene": {
-        "name": "{group} सीन"
+        "name": "{group} ग्रुप सीन"
+      }
+    },
+    "scene": {
+      "group_scene": {
+        "name": "{group} ग्रुप {scene}"
+      }
+    },
+    "sensor": {
+      "controller_status": {
+        "name": "स्थिति",
+        "state": {
+          "online": "ऑनलाइन",
+          "starting": "शुरू हो रहा है",
+          "unreachable": "पहुंच से बाहर"
+        }
       }
     }
   }

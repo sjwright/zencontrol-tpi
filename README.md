@@ -9,8 +9,8 @@ A comprehensive Home Assistant custom integration for [zencontrol](https://zenco
 * **Rooms and areas** — group entities into sub-devices by label prefix so rooms map cleanly to Home Assistant areas
 * **Live updates** — light levels, colour, scenes, profiles, motion, buttons, and absolute inputs update in Home Assistant as they change on the controller (no polling)
 * **Full colour** — all fixtures fully controllable for dimming, temperature and colour where supported, with correct conversion from linear (DALI) to perceptual (HA)
-* **Groups** — group control, plus group scene recall via a select entity
-* **Scenes** — complete scene recall including colour changes
+* **Groups** — group control, plus group scene recall via native scene entities
+* **Scenes** — DALI scene recall with fast UI performance via scene caching at the library level
 * **Button events** — short and long press events for controlling automations
 * **Motion sensors** — occupancy detections as binary sensors for lighting and presence automations
 * **Absolute inputs** — dials, sliders, and other numeric ECD inputs as measurement sensors

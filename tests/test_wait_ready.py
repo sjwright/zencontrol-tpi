@@ -48,6 +48,7 @@ def _hub_with_controller(ready_sequence: list[bool | None]) -> ZenHub:
     hub._sv_sensor_entities = {}
     hub._sv_switch_entities = {}
     hub._profile_entities = {}
+    hub._scene_select_entities = {}
     hub._scene_entities = {}
     hub.sync_device_assignments = MagicMock()
     hub._discover_entities = AsyncMock()

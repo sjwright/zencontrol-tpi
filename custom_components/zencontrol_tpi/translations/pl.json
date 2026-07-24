@@ -166,7 +166,22 @@
         "name": "Profil"
       },
       "group_scene": {
-        "name": "Scena {group}"
+        "name": "Scena grupy {group}"
+      }
+    },
+    "scene": {
+      "group_scene": {
+        "name": "{group} Grupa {scene}"
+      }
+    },
+    "sensor": {
+      "controller_status": {
+        "name": "Status",
+        "state": {
+          "online": "Online",
+          "starting": "Uruchamianie",
+          "unreachable": "Niedostępny"
+        }
       }
     }
   }

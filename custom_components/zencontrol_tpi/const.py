@@ -38,6 +38,7 @@ PLATFORMS: Final = [
     Platform.SWITCH,
     Platform.SENSOR,
     Platform.SELECT,
+    Platform.SCENE,
     Platform.EVENT,
 ]
 
@@ -50,7 +51,8 @@ CONF_UNICAST: Final = "unicast"
 # Per-controller label-prefix sub-devices (see sub_devices.py)
 CONF_SUB_DEVICES: Final = "sub_devices"
 
-# Group scene select when members are discoordinated (mqtt_bridge convention)
+# Group scene select options
+SCENE_OFF: Final = "Off"
 SCENE_NONE: Final = "None"
 
 # Logarithmic arc↔brightness constants (from mqtt_bridge)

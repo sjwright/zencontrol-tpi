@@ -57,7 +57,6 @@ class ZenControllerStatusSensor(ZenControllerEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = list(CONTROLLER_STATUS_OPTIONS)
-    _attr_name = "Status"
     _attr_has_entity_name = True
 
     def __init__(self, hub: ZenHub) -> None:

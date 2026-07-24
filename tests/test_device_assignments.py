@@ -58,6 +58,7 @@ def _make_hub(
     hub._sv_sensor_entities = {}
     hub._sv_switch_entities = {}
     hub._profile_entities = {}
+    hub._scene_select_entities = {}
     hub._scene_entities = {}
     hub._sub_devices_by_controller = {}
     hub._sub_device_assignments = {}

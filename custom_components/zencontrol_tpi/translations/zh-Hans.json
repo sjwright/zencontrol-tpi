@@ -166,7 +166,22 @@
         "name": "配置文件"
       },
       "group_scene": {
-        "name": "{group} 场景"
+        "name": "{group} 组场景"
+      }
+    },
+    "scene": {
+      "group_scene": {
+        "name": "{group} 组 {scene}"
+      }
+    },
+    "sensor": {
+      "controller_status": {
+        "name": "状态",
+        "state": {
+          "online": "在线",
+          "starting": "启动中",
+          "unreachable": "不可达"
+        }
       }
     }
   }
